@@ -20,6 +20,9 @@ public:
     bool RemoveFilter(std::string suffix) {
         m_filter.erase(suffix);
     }
+    uint32_t GetFiles() {
+        return m_file_tree.size();
+    }
     void PrintAll();
 
 private:
@@ -29,8 +32,9 @@ private:
     void ParseSingleFile(std::string& file_path);
 
 private:
-    int32_t m_max_depth;
-    int32_t m_cur_depth;
+    uint32_t m_max_depth;
+    uint32_t m_cur_depth;
+    uint32_t m_total_lines;
     std::set<std::string> m_filter;
     std::map<std::string, FileNode> m_file_tree;
 };

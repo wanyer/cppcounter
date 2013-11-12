@@ -7,12 +7,14 @@
 #include <iostream>
 
 #include "file_utils.h"
+#include "common.h"
 
 namespace cpp_counter {
 
 FileTree::FileTree(std::string src_dir)
     : m_max_depth(0),
-      m_cur_depth(0) {
+      m_cur_depth(0),
+      m_total_lines(0) {
     AddFilter("cc");
     AddFilter("h");
     AddSourceFile(src_dir);
@@ -34,7 +36,7 @@ bool FileTree::AddSourceFile(std::string src_dir) {
         return false;
     }
     if (S_ISDIR(st.st_mode)) {
-        std::cout << "dir: " << src_dir << std::endl;
+//        std::cout << "dir: " << src_dir << std::endl;
         DIR* cur_dir = opendir(src_dir.c_str());
         if (cur_dir == NULL) {
             std::string error_msg = "cannot opendir " + src_dir;
@@ -70,8 +72,13 @@ bool FileTree::AddSourceFile(std::string src_dir) {
 void FileTree::ParseSingleFile(std::string& file_path) {
     FileNode file_node(file_path);
     if (file_node.Parse()) {
+        std::map<std::string, FileNode>::iterator it;
+        if ((it = m_file_tree.find(file_path)) != m_file_tree.end()) {
+            m_total_lines -= it->second.GetLines();
+        }
+        m_total_lines += file_node.GetLines();
         m_file_tree.insert(std::pair<std::string, FileNode>(
-                            file_node.GetName(), file_node));
+                           file_path, file_node));
     } else {
         std::string error_msg = "fail to parse file: " + file_path;
         perror(error_msg.c_str());
@@ -106,10 +113,13 @@ bool FileTree::FileFilter(std::string filename) {
 }
 
 void FileTree::PrintAll() {
-    std::cout << "print all node in filetree" << std::endl;
+    Println("Total lines: " << m_total_lines);
+    Println("Total files: " << m_file_tree.size());
+    Println("Max depth: " << m_max_depth);
     std::map<std::string, FileNode>::iterator it;
     for (it = m_file_tree.begin(); it != m_file_tree.end(); ++it) {
-        std::cout << it->first << std::endl;
+        Println(it->first);
+        it->second.Print();
     }
 }
 
