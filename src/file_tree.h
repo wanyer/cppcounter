@@ -10,7 +10,6 @@
 namespace cpp_counter {
 class FileTree {
 public:
-    FileTree();
     FileTree(std::string src_dir);
     ~FileTree();
 
@@ -21,16 +20,17 @@ public:
     bool RemoveFilter(std::string suffix) {
         m_filter.erase(suffix);
     }
+    void PrintAll();
 
 private:
+    FileTree() {};
     bool FileFilter(std::string filename);
     bool PathFilter(std::string path);
-    bool SplitPath(std::string& full_path,
-                   std::string* last_part,
-                   std::string* rest_part = NULL);
-    std::string GetSuffix(std::string filename);
+    void ParseSingleFile(std::string& file_path);
 
 private:
+    int32_t m_max_depth;
+    int32_t m_cur_depth;
     std::set<std::string> m_filter;
     std::map<std::string, FileNode> m_file_tree;
 };

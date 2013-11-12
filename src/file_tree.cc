@@ -6,12 +6,13 @@
 
 #include <iostream>
 
+#include "file_utils.h"
+
 namespace cpp_counter {
-FileTree::FileTree() {
 
-}
-
-FileTree::FileTree(std::string src_dir) {
+FileTree::FileTree(std::string src_dir)
+    : m_max_depth(0),
+      m_cur_depth(0) {
     AddFilter("cc");
     AddFilter("h");
     AddSourceFile(src_dir);
@@ -35,22 +36,46 @@ bool FileTree::AddSourceFile(std::string src_dir) {
     if (S_ISDIR(st.st_mode)) {
         std::cout << "dir: " << src_dir << std::endl;
         DIR* cur_dir = opendir(src_dir.c_str());
+        if (cur_dir == NULL) {
+            std::string error_msg = "cannot opendir " + src_dir;
+            perror(error_msg.c_str());
+            return false;
+        }
+        m_cur_depth++;
+        if (m_cur_depth > m_max_depth) {
+            m_max_depth = m_cur_depth;
+        }
+
+        // traverse child directories
         struct dirent* ent;
         while ((ent = readdir(cur_dir)) != NULL) {
             std::string child_path = src_dir + "/" + ent->d_name;
             AddSourceFile(child_path.c_str());
         }
+        m_cur_depth--;
     } else if (S_ISREG(st.st_mode)) {
         if (FileFilter(src_dir)) {
-            std::cout << "file: " << src_dir << std::endl;
+//            std::cout << "file: " << src_dir << std::endl;
+            ParseSingleFile(src_dir);
         } else {
-            std::cout << "wrong file: " << src_dir << std::endl;
+//            std::cout << "wrong file: " << src_dir << std::endl;
         }
     } else {
         std::cout << "wrong file mode" << std::endl;
     }
 
     return true;
+}
+
+void FileTree::ParseSingleFile(std::string& file_path) {
+    FileNode file_node(file_path);
+    if (file_node.Parse()) {
+        m_file_tree.insert(std::pair<std::string, FileNode>(
+                            file_node.GetName(), file_node));
+    } else {
+        std::string error_msg = "fail to parse file: " + file_path;
+        perror(error_msg.c_str());
+    }
 }
 
 bool FileTree::PathFilter(std::string path) {
@@ -74,41 +99,18 @@ bool FileTree::PathFilter(std::string path) {
 }
 
 bool FileTree::FileFilter(std::string filename) {
-    if (m_filter.find(GetSuffix(filename)) != m_filter.end()) {
+    if (m_filter.find(GetFileSuffix(filename)) != m_filter.end()) {
         return true;
     }
     return false;
 }
 
-bool FileTree::SplitPath(std::string& full_path,
-                         std::string* last_part,
-                         std::string* rest_part) {
-    if (full_path.at(full_path.length() - 1) == '/') {
-        full_path = full_path.substr(0, full_path.length() - 2);
+void FileTree::PrintAll() {
+    std::cout << "print all node in filetree" << std::endl;
+    std::map<std::string, FileNode>::iterator it;
+    for (it = m_file_tree.begin(); it != m_file_tree.end(); ++it) {
+        std::cout << it->first << std::endl;
     }
-    std::string::size_type pos = full_path.rfind("/");
-    if (pos != std::string::npos) {
-        if (rest_part) {
-            *rest_part = full_path.substr(0, pos);
-        }
-        if (last_part) {
-            *last_part = full_path.substr(pos + 1);
-        }
-    } else {
-        if (last_part) {
-            *last_part = full_path;
-        }
-    }
-    return true;
-}
-
-std::string FileTree::GetSuffix(std::string filename) {
-    std::string::size_type pos = filename.rfind(".");
-
-    if (pos != std::string::npos) {
-        return filename.substr(pos + 1);
-    }
-    return "";
 }
 
 }

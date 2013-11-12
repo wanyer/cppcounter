@@ -10,6 +10,6 @@ int main(int argc, char* argv[]) {
         src_dir = argv[1];
     }
     cpp_counter::FileTree file_tree(src_dir);
-
+    file_tree.PrintAll();
     return 0;
 }
