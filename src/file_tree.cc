@@ -54,6 +54,7 @@ bool FileTree::AddSourceFile(std::string src_dir) {
             std::string child_path = src_dir + "/" + ent->d_name;
             AddSourceFile(child_path.c_str());
         }
+        closedir(cur_dir);
         m_cur_depth--;
     } else if (S_ISREG(st.st_mode)) {
         if (FileFilter(src_dir)) {

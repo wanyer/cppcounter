@@ -33,6 +33,7 @@ bool FileNode::Parse() {
         m_lines++;
         m_chars += strlen(line_buffer);
     }
+    ifs.close();
     return true;
 }
 
